@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <script src='uritemplate.js'></script>
+        <script src='remotewebapi.js'></script>
+    </head>
+    <body>
+        <script>
+            "use strict";
+            let demoAPI = null;
+            let crc = null;
+            openAPI('/demo/').then(function (api) {
+                demoAPI = api;
+                return api.getAlgorithms();
+            }).then(function (algorithms) {
+                let algoSelect = document.getElementById('algo');
+                for (let index = 0; index < algorithms.length; index++) {
+                    let option = document.createElement('option');
+                    option.setAttribute('value', algorithms[index]);
+                    option.textContent = algorithms[index];
+                    algoSelect.appendChild(option);
+                }
+            }, function (error) {
+                console.log('Rejected: ' + error);
+            });
+
+            function hashPassword() {
+                let cleartext = document.getElementById('password').value;
+                let algo = document.getElementById('algo').value;
+                let salt = document.getElementById('salt').value;
+                let rounds = document.getElementById('rounds').value;
+                let result = document.getElementById('result');
+                demoAPI.hashPassword(cleartext, algo, salt, rounds).then(function (hashed) {
+                    result.textContent = hashed;
+                }, function (error) {
+                    result.textContent = 'ERROR: ' + error;
+                })
+            }
+
+            function sha256() {
+                let data = document.getElementById('sha256').value;
+                let result = document.getElementById('sha256out');
+                demoAPI.hash256(data).then(function (hash) {
+                    result.textContent = hash;
+                }, function (error) {
+                    result.textContent = error;
+                });
+            }
+
+            function sha512() {
+                let data = document.getElementById('sha512').value;
+                let result = document.getElementById('sha512out');
+                demoAPI.hash512(data).then(function (hash) {
+                    result.textContent = hash;
+                }, function (error) {
+                    result.textContent = error;
+                });
+            }
+
+            function crc32() {
+                let data = document.getElementById('crc32').value;
+                let result = document.getElementById('crc32out');
+                if (crc) {
+                    crc.update(data).then(function () {
+                        result.textContent = crc.output;
+                    }, function (error) {
+                        result.textContent = error;
+                    })
+                }
+                else {
+                    demoAPI.crc32(data).then(function (crcOut) {
+                        crc = crcOut;
+                        result.textContent = crc.output;
+                    }, function (error) {
+                        result.textContent = error;
+                    });
+                }
+            }
+
+            function resetCrc() {
+                crc = null;
+                document.getElementById('crc32out').textContent = '';
+            }
+        </script>
+
+        <fieldset>
+            <legend>Hash Password</legend>
+            <label for='algo'>Algorithm: </label><select id='algo'></select><br>
+            <label for='password'>Password:</label><input type='password' id='password'><br>
+            <label for='salt'>Salt:</label><input type='text' id='salt'><br>
+            <label for='rounds'>Rounds:</label><input type='text' id='rounds' value='10'><br>
+            <button onclick='hashPassword()'>Hash</button><br>
+            <p id='result'></p>
+        </fieldset>
+        <p></p>
+        <fieldset>
+            <legend>Secure Hash Algorithm</legend>
+            <label for='sha256'>Data:</label><input type='text' id='sha256'><button onclick='sha256()'>SHA 256</button><p id='sha256out'></p>
+            <label for='sha512'>Data:</label><input type='text' id='sha512'><button onclick='sha512()'>SHA 512</button><p id='sha512out'></p>
+        </fieldset>
+        <p></p>
+        <fieldset>
+            <legend>CRC 32</legend>
+            <label for='crc32'>Data:</label><input type='text' id='crc32'><button onclick='crc32()'>CRC 32</button><button onclick='resetCrc()'>Reset</button>
+            <p id='crc32out'></p>
+        </fieldset>
+    </body>
+</html>
