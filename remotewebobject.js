@@ -58,6 +58,9 @@ class RemoteEvent {
 }
 
 
+class RemoteWebEventTarget extends EventTarget {
+}
+
 class RemoteWebObject {
 
     static async Fetch(url, options) {
@@ -161,7 +164,7 @@ class RemoteWebObject {
                     argObject[key] = privateState[key];
                 }
             }
-            if (func && func.hasOwnProperty('arguments')) {    // capture function arguments
+            if (args && func && func.hasOwnProperty('arguments')) {    // capture function arguments
                 for (let index = 0; (index < func.arguments.length) && (index < args.length); index++) {
                     if ('...' == func.arguments[index]) {
                         argObject['...'] = args.slice(index);
@@ -545,11 +548,10 @@ class RemoteWebObject {
                     }
                 }
 
-                if (resource.hasOwnProperty('events') && (0 < resource.events.length)) {
+                if (resource.hasOwnProperty('events')) {
                     resource.eventListenerCount = 0;
-                    for (let index = 0; index < resource.events.length; index++) {
-                        let eventType = resource.events[index];
-                        if (! eventResources.hasOwnProperty(eventType)) {
+                    for (let eventType in resource.events) {
+                        if (resource.events.hasOwnProperty(eventType) && (! eventResources.hasOwnProperty(eventType))) {
                             console.log('resource', resourceName, 'has event', eventType);
                             eventResources[eventType] = resource;
                             Object.defineProperty(self, 'on' + eventType, {
@@ -579,7 +581,9 @@ class RemoteWebObject {
                 if (callback && ('function' === typeof callback)) {
                     let resource = eventResources[eventType];
                     if (! resource.eventSource) {
-                        let url = (resource.uriTemplate ? resource.uriTemplate.expand(matchArguments(null, null, self)) : resource.href);
+                        let event = resource.events[eventType];
+                        let argObject = matchArguments(event, null, self);
+                        let url = (resource.uriTemplate ? resource.uriTemplate.expand(argObject) : resource.href);
                         if (url) {
                             resource.eventSource = new EventSource(url, {withCredentials: 'omit' != callOptions.credentials});
                         }
@@ -626,6 +630,7 @@ class RemoteWebObject {
                 }
                 return true;
             };
+            self.__proto__ = RemoteWebEventTarget.prototype;
         }
     }
 

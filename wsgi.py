@@ -322,11 +322,16 @@ def application(env, start_response):
                     },
                     'tick': {
                         'href': application_uri + 'demo/tick',
-                        'events': ['tick']
+                        'events': {
+                            'tick': {}
+                        }
                     },
                     'clock': {
                         'href': application_uri + 'demo/clock',
-                        'events': ['second', 'minute']
+                        'events': {
+                            'second': {},
+                            'minute': {}
+                        }
                     }
                 }
             }

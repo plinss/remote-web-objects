@@ -107,7 +107,7 @@ arguments may be sent in the HTTP request body via PUT and POST methods encoded 
 
 #### Defining Events ####
 
-Events can also be bound to API resources, by declaring a list of event types.
+Events can also be bound to API resources, by declaring a set of event types.
 
 For example, a "clock" API reource that fires a "second" event once per second and a "minute" event once per minute:
 
@@ -115,7 +115,10 @@ For example, a "clock" API reource that fires a "second" event once per second a
         'resources': {
             'clock': {
                 'href': '/api/clock',
-                'events': ['second', 'minute']
+                'events': {
+                    'second': {},
+                    'minute': {}
+                }
             }
         }
     }
@@ -154,7 +157,12 @@ HTTP fetches that return JSON-Patch documents may modify the state of the object
 
 The beginnings of a more detailed specification describing the implementation of a Remote Web Object Document processor is provided in this repository.
 
-In addition, a fully functional polyfill is available as an ES6 module in [remotewebobject.js](remotewebobject.js).
+In addition, a polyfill is available as an ES6 module in [remotewebobject.js](remotewebobject.js).
+The polyfill provides all the specified behavior of a Remote Web Object except for:
+
+    1) When sending EventSource requests, authorization headers and request bodies are not sent due to current limitiations in the EventSource API.
+
+    2) When manually dispatching events via the Remote Web Object's dispatchEvent() function, the target of the event is not changed to the Remote Web Object.
 
 A demonstration web page of a Remote Web Object is available in [index.html](index.html) with an HTTP server implementaion of a demonstration API in [wsgi.py](wsgi.py).
 
