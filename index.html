@@ -1,78 +1,124 @@
 <html>
     <head>
-        <script src='uritemplate.js'></script>
-        <script src='remotewebapi.js'></script>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                display: grid;
+                grid-template-columns: [demo-start] 1fr [demo-end explainer-start] 1fr [explainer-end];
+                grid-row-gap: 1em;
+            }
+            input, select, button {
+                margin-top: .25em;
+                margin-bottom: .25em;
+            }
+            .demo {
+                grid-column: demo;
+                border-bottom: 1px solid black;
+            }
+            .demo p {
+                word-break: break-all;
+                margin-right: 1em;
+            }
+            .explainer {
+                grid-column: explainer;
+                border-bottom: 1px solid black;
+            }
+        </style>
     </head>
     <body>
+        <script type=module>
+            import "./remotewebobject.js";
+        </script>
         <script>
             "use strict";
-            let demoAPI = null;
-            let crc = null;
-            openAPI('/demo/').then(function (api) {
-                demoAPI = api;
-                return api.getAlgorithms();
-            }).then(function (algorithms) {
-                let algoSelect = document.getElementById('algo');
-                for (let index = 0; index < algorithms.length; index++) {
-                    let option = document.createElement('option');
-                    option.setAttribute('value', algorithms[index]);
-                    option.textContent = algorithms[index];
-                    algoSelect.appendChild(option);
-                }
-            }, function (error) {
-                console.log('Rejected: ' + error);
-            });
 
-            function hashPassword() {
+            let demo = null;
+            let crc = null;
+
+            onload = async () => {
+                try {
+                    let fetchRemote = this.fetchRemoteObject || this.fetchRemoteObjectPolyfill;
+                    demo = await fetchRemote('/demo/');
+                    console.log('Got remote object:', demo);
+
+                    demo.onsecond = (event) => {
+                        let output = document.getElementById('second');
+                        output.textContent = event.hour + ':' + ('0'+event.minute).slice(-2) + ':' + ('0'+event.second).slice(-2);
+                    }
+                    demo.onminute = (event) => {
+                        let output = document.getElementById('minute');
+                        output.textContent = event.hour + ':' + ('0'+event.minute).slice(-2) + ':' + ('0'+event.second).slice(-2);
+                    }
+
+                    let algorithms = await demo.getAlgorithms();
+                    let algoSelect = document.getElementById('algo');
+                    for (let index = 0; index < algorithms.length; index++) {
+                        let option = document.createElement('option');
+                        option.setAttribute('value', algorithms[index]);
+                        option.textContent = algorithms[index];
+                        algoSelect.appendChild(option);
+                    }
+                }
+                catch(error) {
+                    console.log('Error getting remote object:', error);
+                }
+            }
+
+            async function hashPassword() {
                 let cleartext = document.getElementById('password').value;
                 let algo = document.getElementById('algo').value;
                 let salt = document.getElementById('salt').value;
                 let rounds = document.getElementById('rounds').value;
                 let result = document.getElementById('result');
-                demoAPI.hashPassword(cleartext, algo, salt, rounds).then(function (hashed) {
-                    result.textContent = hashed;
-                }, function (error) {
+
+                try {
+                    result.textContent = await demo.hashPassword(cleartext, algo, salt, rounds);
+                }
+                catch (error) {
                     result.textContent = 'ERROR: ' + error;
-                })
+                }
             }
 
-            function sha256() {
+            async function sha256() {
                 let data = document.getElementById('sha256').value;
                 let result = document.getElementById('sha256out');
-                demoAPI.hash256(data).then(function (hash) {
-                    result.textContent = hash;
-                }, function (error) {
+
+                try {
+                    result.textContent = await demo.hash256(data);
+                }
+                catch (error) {
                     result.textContent = error;
-                });
+                }
             }
 
-            function sha512() {
+            async function sha512() {
                 let data = document.getElementById('sha512').value;
                 let result = document.getElementById('sha512out');
-                demoAPI.hash512(data).then(function (hash) {
-                    result.textContent = hash;
-                }, function (error) {
+
+                try {
+                    result.textContent = await demo.hash512(data);
+                }
+                catch (error) {
                     result.textContent = error;
-                });
+                }
             }
 
-            function crc32() {
+            async function crc32() {
                 let data = document.getElementById('crc32').value;
                 let result = document.getElementById('crc32out');
-                if (crc) {
-                    crc.update(data).then(function () {
+                try {
+                    if (crc) {
+                        await crc.update(data);
                         result.textContent = crc.output;
-                    }, function (error) {
-                        result.textContent = error;
-                    })
+                    }
+                    else {
+                        crc = await demo.crc32(data);
+                        result.textContent = crc.output;
+                    }
+                    console.log(crc);
                 }
-                else {
-                    demoAPI.crc32(data).then(function (crcOut) {
-                        crc = crcOut;
-                        result.textContent = crc.output;
-                    }, function (error) {
-                        result.textContent = error;
-                    });
+                catch (error) {
+                    result.textContent = error;
                 }
             }
 
@@ -80,28 +126,146 @@
                 crc = null;
                 document.getElementById('crc32out').textContent = '';
             }
+
+            function startTicker() {
+                demo.ontick = (event) => {
+                    let output = document.getElementById('tick');
+                    output.textContent = event.data;
+                }
+            }
+            function stopTicker() {
+                demo.ontick = null;
+            }
         </script>
 
-        <fieldset>
-            <legend>Hash Password</legend>
+        <div class='demo'>
+            <h3>Hash Password</h3>
             <label for='algo'>Algorithm: </label><select id='algo'></select><br>
-            <label for='password'>Password:</label><input type='password' id='password'><br>
-            <label for='salt'>Salt:</label><input type='text' id='salt'><br>
-            <label for='rounds'>Rounds:</label><input type='text' id='rounds' value='10'><br>
+            <label for='password'>Password: </label><input type='password' id='password'><br>
+            <label for='salt'>Salt: </label><input type='text' id='salt'><br>
+            <label for='rounds'>Rounds: </label><input type='text' id='rounds' value='10'><br>
             <button onclick='hashPassword()'>Hash</button><br>
             <p id='result'></p>
-        </fieldset>
-        <p></p>
-        <fieldset>
-            <legend>Secure Hash Algorithm</legend>
+        </div>
+        <div class='explainer'>
+            Multiple functions per API resource, arguments as query arguments, HTTP GET, JSON response.
+            <pre class='json'>
+'hrefTemplate': '/demo/password/{?cleartext,algorithm,salt,rounds}',
+'functions': {
+    'getAlgorithms': {
+        'arguments': [],
+        'method': 'GET'
+    },
+    'hashPassword': {
+        'arguments': ['cleartext', 'algorithm', 'salt', 'rounds'],
+        'method': 'GET'
+    }
+}
+            </pre>
+
+        </div>
+        <div class='demo'>
+            <h3>Secure Hash Algorithm</h3>
             <label for='sha256'>Data:</label><input type='text' id='sha256'><button onclick='sha256()'>SHA 256</button><p id='sha256out'></p>
             <label for='sha512'>Data:</label><input type='text' id='sha512'><button onclick='sha512()'>SHA 512</button><p id='sha512out'></p>
-        </fieldset>
-        <p></p>
-        <fieldset>
-            <legend>CRC 32</legend>
+        </div>
+        <div class='explainer'>
+            Multiple functions per API resource, default argument as query argument, arguments as form data, HTTP POST and PUT.
+            <pre class='json'>
+'hrefTemplate': '/demo/hash/{?algorithm}',
+'functions': {
+    'hash256': {
+        'arguments': ['data'],
+        'requestFormat': 'application/x-www-form-urlencoded',
+        'method': 'POST',
+        'defaults': {
+            'algorithm': 'sha256'
+        }
+    },
+    'hash512': {
+        'arguments': ['data'],
+        'requestFormat': 'multipart/form-data',
+        'method': 'PUT',
+        'defaults': {
+            'algorithm': 'sha512'
+        }
+    }
+}
+            </pre>
+        </div>
+        <div class='demo'>
+            <h3>CRC 32</h3>
             <label for='crc32'>Data:</label><input type='text' id='crc32'><button onclick='crc32()'>CRC 32</button><button onclick='resetCrc()'>Reset</button>
             <p id='crc32out'></p>
-        </fieldset>
+        </div>
+        <div class='explainer'>
+            Function returns new RemoteWebObject with state information.<br>
+            Returned RemoteWebObject's <code>update()</code> function uses HTTP PUT, sends state information in JSON request body, returns JSON-Patch to update state.
+            <pre class='json'>
+'hrefTemplate': '/demo/crc/{?data}',
+'functions': {
+    'crc32': {
+        'arguments': ['data'],
+        'format': 'application/json-remote',
+        'method': 'GET'
+    }
+}
+            </pre>
+            Returned RemoteWebObject definition:
+            <pre class='json'>
+'resources': {
+    'crc': {
+        'hrefTemplate': '/demo/crc/{?data}',
+        'functions': {
+            'update': {
+                'arguments': ['data'],
+                'format': 'application/json-patch+json',
+                'method': 'PUT',
+                'requestBody': ['value']
+            }
+        }
+    }
+},
+'state': {
+    'public': {
+        'output': crc
+    },
+    'private': {
+        'value': crc
+    },
+    'readonly': {
+        "readonlyOutput": crc
+    },
+}
+            </pre>
+        </div>
+        <div class='demo'>
+            <h3>Clock</h3>
+            <p>Per second: <span id='second'></span></p>
+            <p>Per minute: <span id='minute'></span></p>
+        </div>
+        <div class='explainer'>
+            Multiple events from a single Event Stream
+            <pre class='json'>
+'clock': {
+    'href': '/demo/clock',
+    'events': ['second', 'minute']
+}
+            </pre>
+        </div>
+        <div class='demo'>
+            <h3>Ticker</h3>
+            <p>Tick: <span id='tick'></span></p>
+            <button onclick='startTicker()'>Start</button><button onclick='stopTicker()'>Stop</button>
+        </div>
+        <div class='explainer'>
+            Adding and removing an event handler.
+            <pre class='json'>
+'tick': {
+    'href': '/demo/tick',
+    'events': ['tick']
+}
+            </pre>
+        </div>
     </body>
 </html>

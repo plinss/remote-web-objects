@@ -1,13 +1,13 @@
 /*******************************************************************************
  *
- *  Copyright © 2016 Peter Linss
+ *  Copyright © 2016-2018 Peter Linss
  *
  *  This work is distributed under the W3C® Software License [1]
  *  in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- *  [1] http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
+ *  [1] https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
  *
  ******************************************************************************/
 
@@ -418,7 +418,7 @@ class URIFormStyleQueryContinuation extends URIFormStyleQueryExpansion {
 }
 
 
-class URITemplate {
+export class URITemplate {
     constructor(template) {
         this.template = template;
         this.parts = [];

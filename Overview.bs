@@ -1,15 +1,15 @@
-<h1>Remote Web API</h1>
+<h1>Remote Web Objects</h1>
 
 <pre class='metadata'>
 Shortname: remote-web-api
 Level: 1
-Status: ED
+Status: w3c/ED
 Group: tbd
 ED: tbd
 Work Status: exploring
-Editor: Peter Linss, <w3c@linss.com>
-Abstract: This specification describes a system for creating dynamically loadable Javascript APIs that are implemented as remote procedure calls over HTTP.
-Ignored Terms: 
+Editor: Peter Linss <w3c@linss.com>
+Abstract: This specification describes a system for creating dynamically loadable Javascript objects that are implemented as remote procedure calls over HTTP.
+Ignored Terms:
 </pre>
 
 <pre class='biblio'>
@@ -18,7 +18,7 @@ Ignored Terms:
     "authors": [
       "M. Nottingham"
     ],
-    "href": "http://tools.ietf.org/html/draft-nottingham-json-home-03",
+    "href": "http://tools.ietf.org/html/draft-nottingham-json-home-06",
     "title": "Home Documents for HTTP APIs",
     "status": "draft",
     "publisher": "IETF"
@@ -36,12 +36,12 @@ Ignored Terms:
 }
 </pre>
 <pre class=link-defaults>
-spec:url; type:dfn; for:url; text:url
+spec:url; type:dfn; for:URL; text:url
 </pre>
 <pre class="anchors">
 url: https://tc39.github.io/ecma262/#sec-promise-objects; type: dfn; text: promise
 url: https://tc39.github.io/ecma262/#sec-objects; type: dfn; text: object
-url: http://tools.ietf.org/html/draft-nottingham-json-home-03#section-3; type: dfn; text: resource object
+url: http://tools.ietf.org/html/draft-nottingham-json-home-06#section-4; type: dfn; text: resource object
 </pre>
 
 # Introduction # {#intro}
@@ -51,57 +51,56 @@ url: http://tools.ietf.org/html/draft-nottingham-json-home-03#section-3; type: d
 TODO: Intro goes here.
 
 
-# Accessing a Remote Web API # {#access-api}
+# Accessing a Remote Web Object # {#access-api}
 
 <pre class=idl>
 partial interface Window {
-  Promise&lt;RemoteWebAPI>  openAPI(USVString url, optional RemoteWebAPIOptions options, optional RemoteWebAPIAuthentication auth); 
+  Promise&lt;RemoteWebObject>  fetchRemoteObject(USVString url, optional RemoteWebObjectOptions options);
 };
 
-interface RemoteWebAPI {
-  // defined by server    
+interface RemoteWebObject {
+  // defined by server
 };
 
-dictionary RemoteWebAPIOptions {
+dictionary RemoteWebObjectOptions {
   USVString version;
-};
-
-dictionary RemoteWebAPIAuthentication {
   USVString username;
   USVString password;
-  boolean   withCredentials;
+  RequestCredentials credentials;
 };
 </pre>
 
-The {{Window/openAPI()}} function fetches a JSON API Document from the specified <a>url</a>.
-The function returns a <a>Promise</a> that, 
-when a valid JSON API Document is retrieved, 
-is resolved with a live JavaScript <a>Object</a> that contains the state and implements the functions defined in the JSON API Document.
+The {{Window/fetchRemoteObject()}} function fetches a Remote Web Object Document from the specified <a>URL</a>.
+The function returns a <a>Promise</a> that,
+when a valid Remote Web Object Document is retrieved,
+is resolved with a live JavaScript <a>Object</a> that contains the state and implements the functions defined in the Remote Web Object Document.
 If the fetch fails, the Promise is rejected with the error information.
 
-The {{Window/openAPI()}} function may be called with an optional version string and authentication credentials.
-The version string allows retrieval of a specific version of the API implementation.
-If a version string is supplied, 
-the HTTP Accept header of the fetch request will be set to application/&lt;version-string>+json-api,
-otherwise the Accept header of the fetch request will be set to <code>application/json-api</code>.
+The {{Window/fetchRemoteObject()}} function may be called with an optional version string and authentication credentials.
+The version string allows retrieval of a specific version of the Remote Web Object Document.
+If a version string is supplied,
+the HTTP Accept header of the fetch request will be set to <code>application/&lt;version-string>+json-remote</code>,
+otherwise the Accept header of the fetch request will be set to <code>application/json-remote</code>.
 
-If supplied, the authentication credentials will be used during the initial fetch of the JSON API Document and each remote procedure call made via the RemoteWebAPI object.
+If supplied, the authentication credentials will be used during the initial fetch of the Remote Web Object Document and each remote procedure call made via the RemoteWebObject.
 
-# JSON API Documents # {#json-api}
+# Remote Web Object Documents # {#remote-web-object}
 
-RemoteWebAPIs are defined by a superset of a JSON Home Document defined in [[!json-home]]. 
-A JSON Home Document defines a set of HTTP API resources.
-The JSON API Document extensions define a set of JavaScript functions that are mapped to each HTTP API Resource, 
-along with optional state information.
+RemoteWebObjects are defined by a superset of a Home Document for HTTP APIs defined in [[!json-home]].
+A Home Document for HTTP APIs defines a set of HTTP API resources,
+the Remote Web Object Document extensions define a set of JavaScript functions that are mapped to each API Resource,
+server-sent events provided by the HTTP API,
+and optional state information.
 
-When a JSON API Document is processed in repsonse to an {{Window/openAPI()}} call, 
-these functions and state are exposed in the returned JavaScript RemoteWebAPI object as functions and attributes of that object.
+When a Remote Web Object Document is processed in repsonse to an {{Window/fetchRemoteObject()}} call,
+these functions, event handlers, and state are exposed in the returned JavaScript RemoteWebObject as functions and attributes of that object.
 
-The functions exposed in the RemoteWebAPI object are implemented as remote procedure calls over HTTP to the corresponding HTTP API Resource.
+The functions exposed in the RemoteWebObject object are implemented as remote procedure calls over HTTP to the corresponding API Resource.
 
-JSON API Documents use the media type of "application/json-api" or the structural suffix of "+json-api" to allow versioned APIs.
+Remote Web Object Documents use the media type of "application/json-remote" or the structural suffix of "+json-remote" to allow versioned APIs.
+NOTE: this media type is not final and will likely change.
 
-The JSON API Document extentions to a JSON Home Document are as follows:
+The Remote Web Object Document extentions to an API Home Document are as follows:
 
 <pre class=json>
 {
@@ -113,8 +112,8 @@ The JSON API Document extentions to a JSON Home Document are as follows:
           "<a href=#function-arguments>arguments</a>": ["&lt;argument-name1>", "&lt;argument-name2>", "..."],
           "<a href=#function-method>method</a>": "PUT",
           "<a href=#function-format>format</a>": "application/json",
-          "<a href=#function-request-format>request-format</a>": "application/json",
-          "<a href=#function-request-body>request-body</a>": ["&lt;argument-name2>", "&lt;variable-name2>"],
+          "<a href=#function-request-format>requestFormat</a>": "application/json",
+          "<a href=#function-request-body>requestBody</a>": ["&lt;argument-name2>", "&lt;variable-name2>"],
           "<a href=#function-defaults>defaults</a>": {
             "&lt;variable-name1>": &lt;value>,
             "&lt;variable-name2>": &lt;value>
@@ -123,7 +122,8 @@ The JSON API Document extentions to a JSON Home Document are as follows:
         "&lt;function-name2>": {
           ...
         }
-      }
+      },
+      "<a href=#events>events</a>": ["&lt;event-type1>", "&lt;event-type2>"]
     }
   },
   "<a href=#object-state>state</a>": {
@@ -151,22 +151,22 @@ Each function definition may contain the following members:
 :: the HTTP method to use when calling the HTTP API.
 : <a href=#function-format>"format"</a>
 :: the format of the acceptable response.
-: <a href=#function-request-format>"request-format"</a>
+: <a href=#function-request-format>"requestFormat"</a>
 :: the format of the request body, if required.
-: <a href=#function-request-body>"request-body"</a>
+: <a href=#function-request-body>"requestBody"</a>
 :: the arguments and state information provided in the request body.
 : <a href=#function-defaults>"defaults"</a>
-:: an optional set of default values for the HTTP API Resource variables or request body. 
+:: an optional set of default values for the HTTP API Resource variables or request body.
 
-Functions return <a>Promise</a>s that resolve with the value returned from the HTTP remove procedure call.
+Functions return a <a>Promise</a> that resolves with the value returned from the HTTP remote procedure call.
 
 The following is an example of an HTTP API Resource that provides a password hashing service and defines two functions:
 <pre class='json example'>
 {
   "resources": {
     "password": {
-      "href-template": "https://api.example.com/password/{?cleartext,algorithm,salt,rounds}",
-      "href-vars": {
+      "hrefTemplate": "https://api.example.com/password/{?cleartext,algorithm,salt,rounds}",
+      "hrefVars": {
         "cleartext": "param/password/cleartext",
         "algorithm": "param/password/algorithm",
         "salt": "param/password/salt",
@@ -199,11 +199,11 @@ The following is an example of an HTTP API Resource that provides a password has
 }
 </pre>
 
-Processing this JSON API Document will result in an RemoteWebAPI object equivalent to the following interface:
+Processing this Remote Web Object Document will result in a RemoteWebObject equivalent to the following interface:
 <pre class='example'>
 interface Password {
   Promise&lt;sequence&lt;USVString>>  getAlgorithms();
-  Promise&lt;USVString>            hashPassword(USVString cleartext, USVString algorithm, USVString salt, long rounds); 
+  Promise&lt;USVString>            hashPassword(USVString cleartext, USVString algorithm, USVString salt, long rounds);
 };
 </pre>
 
@@ -215,15 +215,15 @@ Each argument in the array provides a mapping from a positional argument of the 
 The position of the argument in the function call correlates directly to the index of the argument name in the array.
 
 Values of arguments passed to the function and mapped to API resource variables
-will be included in the processing of the resource's href-template when computing the URL to use for the HTTP remote procedure call.
-Arguments not consumed by the href-template are available to be used for the request body of the HTTP remote procedure call.
+will be included in the processing of the resource's hrefTemplate when computing the URL to use for the HTTP remote procedure call.
+Arguments not consumed by the hrefTemplate are available to be used for the request body of the HTTP remote procedure call.
 
 If not defined, or if defined as an empty array, the function will take no arguments.
 
 Variadic functions may be defined by terminating the array of arguments with the value "...".
 Any argument names following a value of "..." are an error and will be ignored.
 Arguments passed to a variadic function after the last named argument (all arguments if no named arguments are present)
-will be available as an array referenced in the href-template or object state by the name "...".
+will be available as an array referenced in the hrefTemplate or object state by the name "...".
 
 
 ### HTTP Method ### {#function-method}
@@ -240,51 +240,104 @@ If the resource provides a "formats" hint, the supplied format must be one of th
 
 If not specified, the default value will be <code>application/json</code>.
 
+
 ### Request Format ### {#function-request-format}
 
 Functions that make an HTTP remote procedure call with the POST or PUT HTTP methods may send data in the request body.
-The value of the "request-format" will be used as the Content-Type header of the HTTP request.
+The value of the "requestFormat" will be used as the Content-Type header of the HTTP request.
 
-If the "request-format" is specified as <code>application/json</code> or uses the "+json" structural suffix, 
-the request body will be sent in JSON format. 
-Alternatively the request body may be sent as multi-part form data via the "request-format" of <code>multipart/form-data</code>,
-or url encoded via the "request-format" of <code>application/x-www-form-urlencoded</code>.
+If the "requestFormat" is specified as <code>application/json</code> or uses the "+json" structural suffix,
+the request body will be sent in JSON format.
+Alternatively the request body may be sent as multi-part form data via the "requestFormat" of <code>multipart/form-data</code>,
+or url encoded via the "requestFormat" of <code>application/x-www-form-urlencoded</code>.
 Other request formats are unspecified at this time.
 
-If not specified, the default value will be <code>multipart/form-data</code> for POST methods, 
+If not specified, the default value will be <code>multipart/form-data</code> for POST methods,
 and <code>application/json</code> for PUT methods.
+
 
 ### Request Body ### {#function-request-body}
 
-Any defined function arguments and object state that are not used by the href-template will be sent as the request body of PUT or POST HTTP remote procedure calls.
+Any defined function arguments and object state that are not used by the hrefTemplate will be sent as the request body of PUT or POST HTTP remote procedure calls.
 Instead of sending all unused arguments and object state, the function may optionally specify an array of value names.
-If specified, the "request-body" will limit the contents of the request body to the values of the arguments or object state specified in the array. If the array is empty, the request body will be empty.
+If specified, the "requestBody" will limit the contents of the request body to the values of the arguments or object state specified in the array. If the array is empty, the request body will be empty.
 
-If not specified, all defined arguments and object state that has not been consumed by the href-template will be sent as the request body.
+If not specified, all defined arguments and object state that has not been consumed by the hrefTemplate will be sent as the request body.
 
 ### Default Values ### {#function-defaults}
 
 Default values specify the values to use for the variables of the API resource if not provided in the function call or object state.
 
-In the above example JSON API Document, 
-if the function <code>hashPassword("123456")</code> is called, 
+In the above example Remote Web Object Document,
+if the function <code>hashPassword("123456")</code> is called,
 it will be equivalent to <code>hashPassword("123456", "bcrypt")</code>.
+
+
+## Event Definitions ## {#events}
+
+Events are defined via an optional "events" property within a <a>Resource Object</a>.
+The "events" property defines an array of event types that are generated by the API resource.
+
+When any API resource defines one or more events,
+the RemoteWebObject inherits the <a>EventTarget</a> interface and contains one attribute per event type with the name "on&lt;event type>".
+
+When the first event listener is set for a given API resource,
+a single <a>EventSource</a> connection is established to the API resource's href or hrefTemplate.
+The hrefTemplate is resolved with the current state and specified defaults of the RemoteWebObject.
+Additional event listeners for the same API resource will re-use the same <a>EventSource</a>.
+
+When the last event listener is removed for a given API resource,
+the <a>EventSource</a> for that API resource is closed.
+
+Setting an event listener via the "on&lt;event type>" attribute are equivalent to removing any current listener,
+then adding the listener.
+Therefore resetting a single event listener via the "on&lt;event type>" attribute will close, then re-open the <a>EventSource</a>.
+The current state of the RemoteWebObject will be used to re-evaliate the hrefTemplate of the <a>EventSource</a> when re-opening.
+
+The following is an example of an HTTP API Resource that provides an event at specified intervals:
+<pre class='json example'>
+{
+  "resources": {
+    "tick": {
+      "hrefTemplate": "https://api.example.com/tick/{?interval}",
+      "hrefVars": {
+        "interval": "param/tick/interval"
+      },
+      "<a href=#events>events</a>": ["tick"]
+    }
+  },
+  "state": {
+    "public": {
+      "interval": 1000
+    }
+  }
+}
+</pre>
+
+Processing this Remote Web Object Document will result in a RemoteWebObject equivalent to the following interface:
+<pre class='example'>
+interface Ticker : EventTarget {
+  attribute ontick;
+  attribute interval;
+};
+</pre>
+
 
 ## Object State ## {#object-state}
 
-JSON API Documents may also define state information contained in the RemoteWebAPI object.
-State information contained in the RemoteWebAPI object will be included in the processing of the API resource's "href-template" when computing the URL to use for the HTTP remote procedure call.
-State information not consumed by the href-template is available to be used for the request body of the HTTP remote procedure call.
+Remote Web Object Documents may also define state information contained in the RemoteWebObject.
+State information contained in the RemoteWebObject will be included in the processing of the API resource's "hrefTemplate" when computing the URL to use for the HTTP remote procedure call.
+State information not consumed by the hrefTemplate is available to be used for the request body of the HTTP remote procedure call.
 
-State information is provided via a "state" member in the root of the JSON API Document. 
+State information is provided via a "state" member in the root of the Remote Web Object Document.
 The state values may contain "public", "readonly", and "private" members to define public, read only, and private state information respectively.
-Public and read only state will be visible as attributes and read only attributes of the RemoteWebAPI object.
-Private state is not visible to code using the RemoteWebAPI object,
+Public and read only state will be visible as attributes and read only attributes of the RemoteWebObject.
+Private state is not visible to code using the RemoteWebObject,
 but is available to be used in HTTP remote procedure calls.
 
 It is an error to have members with the same name within public, readonly, and private state.
-In the event of name collisions, 
-members of readonly state that conflict with members of private state will be ignored, 
+In the event of name collisions,
+members of readonly state that conflict with members of private state will be ignored,
 members of public state that conflict with members of readonly state or private state will be ignored.
 
 <pre class='json example'>
@@ -304,7 +357,7 @@ members of public state that conflict with members of readonly state or private 
 }
 </pre>
 
-Processing the above example will result in a RemoteWebAPI object equivalent to the following:
+Processing the above example will result in a RemoteWebObject equivalent to the following:
 <pre class=example>
 interface Example {
   attribute USVString           input;
@@ -312,36 +365,43 @@ interface Example {
 };
 </pre>
 
+
 ### Public State ### {#object-state-public}
 
-Members of the public state object will be made available as regular attributes of the RemoteWebAPI object.
+Members of the public state object will be made available as regular attributes of the RemoteWebObject.
 These members may be modified or deleted by code using the object.
 
 If code using the object adds additional attributes they will be considered public state and will be available when processing remote procedure calls.
 
+
 ### Read Only State ### {#object-state-readonly}
 
-Members of the readonly state object will be made available as read only attributes of the RemoteWebAPI object.
+Members of the readonly state object will be made available as read only attributes of the RemoteWebObject.
 These members may not be modified or deleted by code using the object.
+
 
 ### Private State ### {#object-state-private}
 
 Members of the private state object are only avaiable when processing remote procedure calls.
 
-# Implementation of Remote Web API Functions # {#function-implementation}
 
-All functions of a RemoteWebAPI object are implemented as HTTP remote procedure calls using the following algorithm:
-1. Let <code>func</code> be the object from the JSON API Document defining the function.
+# Implementation of RemoteWebObject # {#implementation}
+
+## Function Implementaion ## {#function-implementation}
+
+All functions of a RemoteWebObject are implemented as HTTP remote procedure calls using the following algorithm:
+
+1. Let <code>func</code> be the object from the Remote Web Object Document defining the function.
 
 2. Let <code>args</code> be a new, empty object.
 
 3. If the <code>func</code> object has a "defaults" member, copy the members of <code>func["defaults"]</code> to <code>args</code>.
 
-4. Copy the public attributes of the RemoteWebAPI object to <code>args</code>, in the case of collisions, overwrite the existing value.
+4. Copy the public attributes of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
 
-5. Copy the read only attribtues of the RemoteWebAPI object to <code>args</code>, in the case of collisions, overwrite the existing value.
+5. Copy the read only attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
 
-6. Copy the private attribtues of the RemoteWebAPI object to <code>args</code>, in the case of collisions, overwrite the existing value.
+6. Copy the private attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
 
 7. If the <code>func</code> object has an "arguments" member, do the following:
 
@@ -355,41 +415,75 @@ All functions of a RemoteWebAPI object are implemented as HTTP remote procedure 
 
     5. Add the value of the argument passed to the function at <code>index</code> to <code>args</code> as <code>args[arg]</code>, in the case of collisions, overwrite the existing value.
 
-8. If the API resource that <code>func</code> is defined for has a "href-template" member, let <code>url</code> be the resolved value of the templated link using the values from <code>args</code>, else let <code>url</code> be the value of the "href" member of the API resource.
+8. If the API resource that <code>func</code> is defined for has a "hrefTemplate" member,
+    let <code>url</code> be the resolved value of the templated link using the values from <code>args</code>,
+    else let <code>url</code> be the value of the "href" member of the API resource.
 
 9. If the API resource that <code>func</code> is defined for has a "method" member, and the value of "method" is "PUT" or "POST", do the following:
 
     1. For each variable used in the resolution of the templated link, delete that member from <code>args</code>.
 
-    2. If the <code>func</code> object has a member "request-body", remove all members from <code>args</code> that are not listed in <code>func["request-body"]</code>.
+    2. If the <code>func</code> object has a member "requestBody", remove all members from <code>args</code> that are not listed in <code>func["requestBody"]</code>.
 
-    3. If the <code>func</code> object has a member "request-format", let <code>format</code> be the value of <code>func["request-format"]</code>, 
-        else if the value of <code>func["method"]</code> is "POST", let <code>format</code> be "multipart/form", 
+    3. If the <code>func</code> object has a member "requestFormat", let <code>format</code> be the value of <code>func["requestFormat"]</code>,
+        else if the value of <code>func["method"]</code> is "POST", let <code>format</code> be "multipart/form",
         else if the value of <code>func["method"]</code> is "PUT", let <code>format</code> be "applicaiton/json".
 
-    4. If the value of <code>format</code> is "application/x-www-form-urlencoded", let the request body be the contents of <code>args</code> in url encoded form format,
+    4. If the value of <code>format</code> is not "application/json", perform a recursive flattening of <code>args</code>.
+        If a member of <code>args</code> is an array, replace the member with a set of members named <code>&lt;member-name>[&lt;index>]</code> for each item in the array.
+        If a member of <code>args</code> is an object, replace the member with a set of memberd named <code>&lt;member-name>[&lt;item-name>]</code> for each item in the object.
+
+    5. If the value of <code>format</code> is "application/x-www-form-urlencoded", let the request body be the contents of <code>args</code> in url encoded form format,
         else if the value of <code>format</code> is "multipart/form", let the request body be the the contents of <code>args</code> in mulitpart/form format,
         else if the value of <code>format</code> is "application/json" or uses the "+json" structural suffix, let the request body be the content of <code>args</code> in JSON format.
 
-10. Perform an asynchronous HTTP fetch of <code>url</code> using the authentication credentials and flags provided in the oringal <a>openAPI()</a> call,
+10. Perform an asynchronous HTTP fetch of <code>url</code> using the authentication credentials and flags provided in the oringal <a>fetchRemoteObject()</a> call,
     using the HTTP method of <code>func["method"]</code> (or "GET" if <code>func</code> does not have a "method" member),
-    setting the "Accept" header to the value of <code>func["format"]</code> (or "application/json" if <code>func</code> does not have a "format" member), 
+    setting the "Accept" header to the value of <code>func["format"]</code> (or "application/json" if <code>func</code> does not have a "format" member),
     and the "Content-Type" format to the value of <code>format</code> (for "PUT" or "POST" methods).
 
 11. Return a new <a>Promise</a>.
 
-12. If the HTTP fetch completes with a status of 200, process the response per the section below and resolve the returned Promise with the return value, 
+12. If the HTTP fetch completes with a status of 200, process the response per the section below and resolve the returned Promise with the return value,
     otherwise reject the returned Promise with the HTTP error information.
 
-## Function Return Value ## {#function-return}
 
-The return value of a RemoteWebAPI function depends on the HTTP response of the server.
-If the Content-Type of the HTTP response is "application/json" or uses the "+json" structural suffix, 
-then the return value is the decoded value of the JSON response.
-If the Content-Type of the HTTP response is "application/json-api" or uses the "+json-api" structural suffix,
-the the return value is a new instance of a RemoteWebAPI object created based on the returned JSON API document.
-If the Content-Type of the HTTP response if "application/json-patch+json",
-then the returned JSON Patch document is applied to the state of the RemoteWebAPI per [[!JSON-Patch]] and no data is returned.
+### Function Return Value ### {#function-return}
 
-When applying a JSON Patch to the RemoteWebAPI object, the path of each operation must begin with 
-"/public/", "/readonly/", or "/private/" to address the respective area of the RemoteWebAPI object's state.
+The return value of a RemoteWebObject function depends on the HTTP response of the server.
+
+1. If the Content-Type of the HTTP response is "application/json" or uses the "+json" structural suffix,
+    then the return value is the JSON decoded value of the response.
+
+2. If the Content-Type of the HTTP response is "application/json-remote" or uses the "+json-remote" structural suffix,
+    the the return value is a new instance of a RemoteWebObject created based on the returned Remote Web Object Document.
+
+3. If the Content-Type of the HTTP response if "application/json-patch+json",
+    then the response JSON Patch document is applied to the state of the RemoteWebObject per [[!JSON-Patch]],
+    if the JSON Patch document creates a top-level member named "return", the value of that member is returned.
+
+When applying a JSON Patch to the RemoteWebObject, the path of each operation must begin with
+"/public/", "/readonly/", "/private/", or "/return/" to address the respective area of the RemoteWebObject's state or the function return data.
+
+
+## Event Implementation ## {#event-implementation}
+
+When a server-sent event is received corresponding to an event type with a registered listener,
+a new RemoteEvent object will be created and sent to the appropriate event listeners.
+
+The target of the RemoteEvent will be the RemoteWebObject.
+The "id" attribute of the server sent event will be reflected in the RemoteEvent.id attribute.
+
+If the server-sent event contains a "data" attribute, it will be processed according to the following algorithm:
+
+1. Let <code>data</code> be the value of the server-sent event's "data" attribute.
+
+2. If the value of <code>data</code> is valid JSON, decode it.
+
+3. If the decoded value of <code>data</code> is an object, copy the attributes of <code>data</code> to the RemoteEvent as readonly attributes.
+
+4. If the RemoteEvent did not acquire a <code>data</code> atrribute in step 3:
+
+  1. If <code>data</code> was valid JSON, add a readonly attibute named "data" with the decoded value of <code>data</code>.
+
+  2. If <code>data</code> was not valid JSON, add a readonly attibute named "data" with the original value of <code>data</code>.
