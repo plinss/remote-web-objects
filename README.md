@@ -152,11 +152,11 @@ HTTP fetches that return JSON-Patch documents may modify the state of the object
 
 ### Specification, Polyfill, and Demo ###
 
-The beginnings of a more detailed specification describing the implementation of a Remote Web Object Document processor is provided in this reposityory.
+The beginnings of a more detailed specification describing the implementation of a Remote Web Object Document processor is provided in this repository.
 
-In addition, a fully functional polyfill is available as an ES6 module in remotewebobject.js.
+In addition, a fully functional polyfill is available as an ES6 module in [remotewebobject.js](remotewebobject.js).
 
-A demonstration web page of a Remote Web Object is available in index.html with an HTTP server implementaion of a demonstration API in wsgi.py.
+A demonstration web page of a Remote Web Object is available in [index.html](index.html) with an HTTP server implementaion of a demonstration API in [wsgi.py](wsgi.py).
 
-
+A [live demo](https://remote-demo.w3ctag.org/) is also avalailable (note: requires [ES6 modules](https://caniuse.com/#feat=es6-module)).
 
