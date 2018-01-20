@@ -1176,7 +1176,7 @@ Possible extra rowspan handling
 		}
 	}
 </style>
-  <meta content="Bikeshed version 24e86bd5bd6c90b3d57bf1ee168df70f4e11d8c4" name="generator">
+  <meta content="Bikeshed version 6183b7307468d4ebe91020ec360b3be2140e71df" name="generator">
   <link href="tbd" rel="canonical">
 <style>/* style-md-lists */
 
@@ -1424,7 +1424,7 @@ pre.highlight, pre > code.highlight { display: block; padding: 1em; margin: .5em
   <div class="head">
    <p data-fill-with="logo"></p>
    <h1>Remote Web Objects</h1>
-   <h2 class="no-num no-toc no-ref heading settled" id="subtitle"><span class="content">Editor’s Draft, <time class="dt-updated" datetime="2018-01-17">17 January 2018</time></span></h2>
+   <h2 class="no-num no-toc no-ref heading settled" id="subtitle"><span class="content">Editor’s Draft, <time class="dt-updated" datetime="2018-01-19">19 January 2018</time></span></h2>
    <div data-fill-with="spec-metadata">
     <dl>
      <dt>This version:
@@ -1436,7 +1436,7 @@ pre.highlight, pre > code.highlight { display: block; padding: 1em; margin: .5em
    <div data-fill-with="warning"></div>
    <p class="copyright" data-fill-with="copyright"><a href="http://creativecommons.org/publicdomain/zero/1.0/" rel="license"><img alt="CC0" src="https://licensebuttons.net/p/zero/1.0/80x15.png"></a> To the extent possible under law, the editors have waived all copyright
 and related or neighboring rights to this work.
-In addition, as of 17 January 2018,
+In addition, as of 19 January 2018,
 the editors have made this specification available under the <a href="http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0" rel="license">Open Web Foundation Agreement Version 1.0</a>,
 which is available at http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0.
 Parts of this work may be from another specification document.  If so, those parts are instead covered by the license of that specification document. </p>
@@ -1666,27 +1666,31 @@ Arguments passed to a variadic function after the last named argument (all argum
 will be available as an array referenced in the hrefTemplate or object state by the name "...".</p>
    <h4 class="heading settled" data-level="3.1.2" id="function-method"><span class="secno">3.1.2. </span><span class="content">HTTP Method</span><a class="self-link" href="#function-method"></a></h4>
    <p>The function’s method defines the HTTP method to be used when making the HTTP remote procedure call.
-If the resource provides an "allow" hint, the supplied method must be one of the allowed methods.</p>
-   <p>If not specified, the default value will be GET.</p>
+If the resource provides an "allow" hint, the supplied method SHOULD be one of the allowed methods.</p>
+   <p>If not specified, the default value will be the first specified value of the resource’s "allow" hint.
+If the resource does not specify an "allow" hint, the default value will be <code>GET</code>.</p>
    <h4 class="heading settled" data-level="3.1.3" id="function-format"><span class="secno">3.1.3. </span><span class="content">Response Format</span><a class="self-link" href="#function-format"></a></h4>
    <p>The function’s format defines the value of the HTTP Accept header used when making the HTTP remote procedure call.
-If the resource provides a "formats" hint, the supplied format must be one of the specified formats.</p>
-   <p>If not specified, the default value will be <code>application/json</code>.</p>
+If the resource provides a "formats" hint, the supplied format SHOULD be one of the specified formats.</p>
+   <p>If not specified, the default value will be the first specified value of the resource’s "formats" hint.
+If the resource does not specify a "formats" hint, the default value will be <code>application/json</code>.</p>
    <h4 class="heading settled" data-level="3.1.4" id="function-request-format"><span class="secno">3.1.4. </span><span class="content">Request Format</span><a class="self-link" href="#function-request-format"></a></h4>
-   <p>Functions that make an HTTP remote procedure call with the POST or PUT HTTP methods may send data in the request body.
+   <p>Functions that make an HTTP remote procedure call with the <code>POST</code> or <code>PUT</code> HTTP methods may send data in the request body.
 The value of the "requestFormat" will be used as the Content-Type header of the HTTP request.</p>
+   <p>The value of "requestFormat" SHOULD match a value specified in the resource’s "acceptPost" or "acceptPut" members.</p>
    <p>If the "requestFormat" is specified as <code>application/json</code> or uses the "+json" structural suffix,
 the request body will be sent in JSON format.
 Alternatively the request body may be sent as multi-part form data via the "requestFormat" of <code>multipart/form-data</code>,
 or url encoded via the "requestFormat" of <code>application/x-www-form-urlencoded</code>.
 Other request formats are unspecified at this time.</p>
-   <p>If not specified, the default value will be <code>multipart/form-data</code> for POST methods,
-and <code>application/json</code> for PUT methods.</p>
+   <p>If not specified, the default value will be the first specified value of "acceptPost" or "acceptPut", depending on the HTTP method,
+or <code>multipart/form-data</code> for <code>POST</code> methods,
+and <code>application/json</code> for <code>PUT</code> methods if "acceptPost" or "acceptPut" is not specified.</p>
    <h4 class="heading settled" data-level="3.1.5" id="function-request-body"><span class="secno">3.1.5. </span><span class="content">Request Body</span><a class="self-link" href="#function-request-body"></a></h4>
-   <p>Any defined function arguments and object state that are not used by the hrefTemplate will be sent as the request body of PUT or POST HTTP remote procedure calls.
+   <p>Any defined function arguments and object state that are not used by the hrefTemplate will be sent as the request body of <code>PUT</code> or <code>POST</code> HTTP remote procedure calls.
 Instead of sending all unused arguments and object state, the function may optionally specify an array of value names.
 If specified, the "requestBody" will limit the contents of the request body to the values of the arguments or object state specified in the array. If the array is empty, the request body will be empty.</p>
-   <p>If not specified, all defined arguments and object state that has not been consumed by the hrefTemplate will be sent as the request body.</p>
+   <p>If not specified, all defined arguments and object state that have not been consumed by the hrefTemplate will be sent as the request body.</p>
    <h4 class="heading settled" data-level="3.1.6" id="function-defaults"><span class="secno">3.1.6. </span><span class="content">Default Values</span><a class="self-link" href="#function-defaults"></a></h4>
    <p>Default values specify the values to use for the variables of the API resource if not provided in the function call or object state.</p>
    <p>In the above example Remote Web Object Document,
@@ -1719,10 +1723,10 @@ The hrefTemplate is resolved with the current state and specified defaults of th
 Additional event listeners for the same API resource will re-use the same <a data-link-type="dfn">EventSource</a>.</p>
    <p>When the last event listener is removed for a given API resource,
 the <a data-link-type="dfn">EventSource</a> for that API resource is closed.</p>
-   <p>Setting an event listener via the "on&lt;event type>" attribute are equivalent to removing any current listener,
-then adding the listener.
+   <p>Setting an event listener via the "on&lt;event type>" attribute is equivalent to removing any current listener,
+then adding the new listener.
 Therefore resetting a single event listener via the "on&lt;event type>" attribute will close, then re-open the <a data-link-type="dfn">EventSource</a>.
-The current state of the RemoteWebObject will be used to re-evaliate the hrefTemplate of the <a data-link-type="dfn">EventSource</a> when re-opening.</p>
+The current state of the RemoteWebObject will be used to re-evaluate the hrefTemplate of the <a data-link-type="dfn">EventSource</a> when re-opening.</p>
    <p>The following is an example of an HTTP API Resource that provides an event at specified intervals:</p>
 <pre class="json example" id="example-8c947a4e"><a class="self-link" href="#example-8c947a4e"></a>{
   "resources": {
@@ -1797,7 +1801,9 @@ These members may not be modified or deleted by code using the object.</p>
    <p>All functions of a RemoteWebObject are implemented as HTTP remote procedure calls using the following algorithm:</p>
    <ol>
     <li data-md="">
-     <p>Let <code>func</code> be the object from the Remote Web Object Document defining the function.</p>
+     <p>Let <code>resource</code> be the object from the Remote Web Object Document defining the API resource.</p>
+    <li data-md="">
+     <p>Let <code>func</code> be the object from <code>resource</code> defining the function.</p>
     <li data-md="">
      <p>Let <code>args</code> be a new, empty object.</p>
     <li data-md="">
@@ -1823,34 +1829,54 @@ These members may not be modified or deleted by code using the object.</p>
        <p>Add the value of the argument passed to the function at <code>index</code> to <code>args</code> as <code>args[arg]</code>, in the case of collisions, overwrite the existing value.</p>
      </ol>
     <li data-md="">
-     <p>If the API resource that <code>func</code> is defined for has a "hrefTemplate" member,
+     <p>If <code>resource</code> has a "hrefTemplate" member,
 let <code>url</code> be the resolved value of the templated link using the values from <code>args</code>,
-else let <code>url</code> be the value of the "href" member of the API resource.</p>
+else if <code>resource</code> has an "href" member, let <code>url</code> be the value of <code>resource.href</code>,
+else let <code>url</code> be "".</p>
     <li data-md="">
-     <p>If the API resource that <code>func</code> is defined for has a "method" member, and the value of "method" is "PUT" or "POST", do the following:</p>
+     <p>If <code>url</code> is a relative URL or an empty string, let <code>url</code> be the absolute URL computed with the value of <code>url</code> and the URL that the Remote Web Object Document was retrieved from as the base.</p>
+    <li data-md="">
+     <p>If <code>func</code> has a "method" member, let <code>method</code> be the value of <code>func.method</code>,
+else if <code>resource</code> has a "hints.allow" member, let <code>method</code> be the first value of <code>resource.hints.allow</code>,
+else let <code>method></code> be "GET".</p>
+    <li data-md="">
+     <p>If the value of <code>method</code> is "PUT" or "POST", do the following:</p>
      <ol>
       <li data-md="">
-       <p>For each variable used in the resolution of the templated link, delete that member from <code>args</code>.</p>
+       <p>For each variable used in the resolution of the "hrefTemplate", delete that member from <code>args</code>.</p>
       <li data-md="">
        <p>If the <code>func</code> object has a member "requestBody", remove all members from <code>args</code> that are not listed in <code>func["requestBody"]</code>.</p>
       <li data-md="">
-       <p>If the <code>func</code> object has a member "requestFormat", let <code>format</code> be the value of <code>func["requestFormat"]</code>,
-else if the value of <code>func["method"]</code> is "POST", let <code>format</code> be "multipart/form",
-else if the value of <code>func["method"]</code> is "PUT", let <code>format</code> be "applicaiton/json".</p>
+       <p>If <code>func</code> has a "requestFormat" member, let <code>requestFormat</code> be the value of <code>func.requestFormat</code>,
+otherwise do the following:</p>
+       <ol>
+        <li data-md="">
+         <p>If the value of <code>method</code> is "POST", then if <code>resource</code> has a "hints.acceptPost" member,
+let <code>requestFormat</code> be the first value of <code>resource.hints.acceptPost</code>,
+else let <code>requestFormat</code> be "multipart/form".</p>
+        <li data-md="">
+         <p>If the value of <code>method</code> is "PUT", then if <code>resource</code> has a "hints.acceptPut" member,
+let <code>requestFormat</code> be the first value of <code>resource.hints.acceptPut</code>,
+else let <code>requestFormat</code> be "applicaiton/json".</p>
+       </ol>
       <li data-md="">
-       <p>If the value of <code>format</code> is not "application/json", perform a recursive flattening of <code>args</code>.
+       <p>If the value of <code>requestFormat</code> is not "application/json", perform a recursive flattening of <code>args</code>.
 If a member of <code>args</code> is an array, replace the member with a set of members named <code>&lt;member-name>[&lt;index>]</code> for each item in the array.
 If a member of <code>args</code> is an object, replace the member with a set of memberd named <code>&lt;member-name>[&lt;item-name>]</code> for each item in the object.</p>
       <li data-md="">
-       <p>If the value of <code>format</code> is "application/x-www-form-urlencoded", let the request body be the contents of <code>args</code> in url encoded form format,
-else if the value of <code>format</code> is "multipart/form", let the request body be the the contents of <code>args</code> in mulitpart/form format,
-else if the value of <code>format</code> is "application/json" or uses the "+json" structural suffix, let the request body be the content of <code>args</code> in JSON format.</p>
+       <p>If the value of <code>requestFormat</code> is "application/x-www-form-urlencoded", let <code>body</code> be the contents of <code>args</code> in url encoded form format,
+else if the value of <code>requestFormat</code> is "multipart/form", let the <code>body</code> be the the contents of <code>args</code> in mulitpart/form format,
+else if the value of <code>requestFormat</code> is "application/json" or uses the "+json" structural suffix, let the <code>body</code> be the content of <code>args</code> in JSON encoding.</p>
      </ol>
     <li data-md="">
+     <p>If <code>func</code> has a "format" member, let <code>accept</code> be the value of <code>func.format</code>,
+else, if <code>resource</code> has a "formats" memeber, let <code>accept</code> be the first value of <code>resource.formats</code>,
+else, let <code>accept</code> be "application/json".</p>
+    <li data-md="">
      <p>Perform an asynchronous HTTP fetch of <code>url</code> using the authentication credentials and flags provided in the oringal <a data-link-type="functionish" href="#dom-window-fetchremoteobject" id="ref-for-dom-window-fetchremoteobject③">fetchRemoteObject()</a> call,
-using the HTTP method of <code>func["method"]</code> (or "GET" if <code>func</code> does not have a "method" member),
-setting the "Accept" header to the value of <code>func["format"]</code> (or "application/json" if <code>func</code> does not have a "format" member),
-and the "Content-Type" format to the value of <code>format</code> (for "PUT" or "POST" methods).</p>
+using the HTTP method of <code>method</code>,
+setting the "Accept" header to the value of <code>accept</code>,
+if <code>method</code> is "POST" or "PUT", set the "Content-Type" header to <code>requestFormat</code> and the request body to the value of <code>body</code>.</p>
     <li data-md="">
      <p>Return a new <a data-link-type="dfn" href="https://tc39.github.io/ecma262/#sec-promise-objects" id="ref-for-sec-promise-objects②">Promise</a>.</p>
     <li data-md="">
@@ -1871,7 +1897,7 @@ the the return value is a new instance of a RemoteWebObject created based on the
 then the response JSON Patch document is applied to the state of the RemoteWebObject per <a data-link-type="biblio" href="#biblio-json-patch">[JSON-Patch]</a>,
 if the JSON Patch document creates a top-level member named "return", the value of that member is returned.</p>
    </ol>
-   <p>When applying a JSON Patch to the RemoteWebObject, the path of each operation must begin with
+   <p>When applying a JSON Patch to the RemoteWebObject, the path of each operation MUST begin with
 "/public/", "/readonly/", "/private/", or "/return/" to address the respective area of the RemoteWebObject’s state or the function return data.</p>
    <h3 class="heading settled" data-level="4.2" id="event-implementation"><span class="secno">4.2. </span><span class="content">Event Implementation</span><a class="self-link" href="#event-implementation"></a></h3>
    <p>When a server-sent event is received corresponding to an event type with a registered listener,

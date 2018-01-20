@@ -81,11 +81,11 @@ class RemoteWebObject {
             credentials: callOptions.credentials,
         });
 
-        return new RemoteWebObject(await response.json(), callOptions);
+        return new RemoteWebObject(response.url, await response.json(), callOptions);
     }
 
 
-    constructor(apiHome, callOptions) {
+    constructor(baseURL, apiHome, callOptions) {
         let privateState = {};
         let readOnlyState = {};
         let self = this;
@@ -441,19 +441,34 @@ class RemoteWebObject {
             console.log('calling ' + resourceName + ':' + functionName);
 
             let resource = resources[resourceName];
+            let hints = (resource.hasOwnProperty('hints') ? resource.hints : {});
             let func = resources[resourceName].functions[functionName];
-            let format = func.format || 'application/json';
+            let format = 'application/json';
+
+            if (func.hasOwnProperty('format')) {
+                format = func.format;
+            }
+            else if (hints.hasOwnProperty('formats') && Array.isArray(hints.formats) && (0 < hints.formats.length)) {
+                format = hints.formats[0];
+            }
 
             let argObject = matchArguments(func, args, object);
-            let url = (resource.uriTemplate ? resource.uriTemplate.expand(argObject) : (resource.hasOwnProperty('href') ? resource.href : null));
+            let url = new URL(resource.uriTemplate ? resource.uriTemplate.expand(argObject) : resource.href, baseURL);
 
-            if (url) {
-                console.log('fetch ' + url);
-                let method = (func.hasOwnProperty('method') ? func.method.toUpperCase() : 'GET');
+            if (url.href) {
+                console.log('fetch ' + url.href);
+                let method = 'GET';
                 let headers = Object.assign({}, callOptions.headers);
                 headers.Accept = format;
 
-                let payload = null;
+                if (func.hasOwnProperty('method')) {
+                    method = func.method.toUpperCase();
+                }
+                else if (hints.hasOwnProperty('allow') && Array.isArray(hints.allow) && (0 < hints.allow.length)) {
+                    method = hints.allow[0];
+                }
+
+                let requestBody = null;
                 if (('POST' == method) || ('PUT' == method)) {
                     if (resource.uriTemplate) {    // remove data sent in uri
                         let variables = resource.uriTemplate.variables;
@@ -470,37 +485,49 @@ class RemoteWebObject {
                         }
                         argObject = requestArgs;
                     }
+                    let requestFormat;
                     if (func.hasOwnProperty('requestFormat')) {
-                        if ('application/x-www-form-urlencoded' == func.requestFormat) {
-                            payload = new URLSearchParams(flattenData({}, argObject));
-                        }
-                        else if ('multipart/form-data' == func.requestFormat) {
-                            payload = getFormData(flattenData({}, argObject));
-                        }
-                        else if (func.requestFormat.endsWith('/json') || func.requestFormat.endsWith('+json')) {
-                            headers['Content-Type'] = func.requestFormat;
-                            payload = JSON.stringify(argObject);
+                        requestFormat = func.requestFormat;
+                    }
+                    else {
+                        if ('POST' == method) {
+                            if (hints.hasOwnProperty('acceptPost') && Array.isArray(hints.acceptPost) && (0 < hints.acceptPost.length)) {
+                                requestFormat = hints.acceptPost[0];
+                            }
+                            else {
+                                requestFormat = 'multipart/form-data';
+                            }
                         }
                         else {
-                            throw 'unhandled request format';
+                            if (hints.hasOwnProperty('acceptPut') && Array.isArray(hints.acceptPut) && (0 < hints.acceptPut.length)) {
+                                requestFormat = hints.acceptPut[0];
+                            }
+                            else {
+                                requestFormat = 'application/json';
+                            }
                         }
                     }
-                    else {    // XXX default to POST=form/PUT=json or default to format?
-                        if ('POST' == method) {
-                            payload = getFormData(flattenData({}, argObject));
-                        }
-                        else {
-                            headers['Content-Type'] = 'application/json';
-                            payload = JSON.stringify(argObject);
-                        }
+
+                    if ('application/x-www-form-urlencoded' == requestFormat) {
+                        requestBody = new URLSearchParams(flattenData({}, argObject));
+                    }
+                    else if ('multipart/form-data' == requestFormat) {
+                        requestBody = getFormData(flattenData({}, argObject));
+                    }
+                    else if (requestFormat.endsWith('/json') || requestFormat.endsWith('+json')) {
+                        headers['Content-Type'] = requestFormat;
+                        requestBody = JSON.stringify(argObject);
+                    }
+                    else {
+                        throw 'unhandled request format';
                     }
                 }
 
-                let response = await fetch(url, {
+                let response = await fetch(url.href, {
                     method: method,
                     headers: headers,
                     credentials: callOptions.credentials,
-                    body: payload,
+                    body: requestBody,
                 });
 
                 if (response.headers.has('content-type')) {
@@ -512,7 +539,7 @@ class RemoteWebObject {
                         return await response.json();
                     }
                     else if (responseType.endsWith('/json-remote') || responseType.endsWith('+json-remote')) {
-                        return new RemoteWebObject(await response.json(), callOptions);
+                        return new RemoteWebObject(url.href, await response.json(), callOptions);
                     }
                     // XXX parse other types? (need to sepcify type in function?)
                 }
@@ -583,9 +610,9 @@ class RemoteWebObject {
                     if (! resource.eventSource) {
                         let event = resource.events[eventType];
                         let argObject = matchArguments(event, null, self);
-                        let url = (resource.uriTemplate ? resource.uriTemplate.expand(argObject) : resource.href);
-                        if (url) {
-                            resource.eventSource = new EventSource(url, {withCredentials: 'omit' != callOptions.credentials});
+                        let url = new URL(resource.uriTemplate ? resource.uriTemplate.expand(argObject) : resource.href, baseURL);
+                        if (url.href) {
+                            resource.eventSource = new EventSource(url.href, {withCredentials: 'omit' != callOptions.credentials});
                         }
                     }
                     if (resource.eventSource) {

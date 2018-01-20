@@ -236,22 +236,26 @@ will be available as an array referenced in the hrefTemplate or object state by 
 ### HTTP Method ### {#function-method}
 
 The function's method defines the HTTP method to be used when making the HTTP remote procedure call.
-If the resource provides an "allow" hint, the supplied method must be one of the allowed methods.
+If the resource provides an "allow" hint, the supplied method SHOULD be one of the allowed methods.
 
-If not specified, the default value will be GET.
+If not specified, the default value will be the first specified value of the resource's "allow" hint.
+If the resource does not specify an "allow" hint, the default value will be <code>GET</code>.
 
 ### Response Format ### {#function-format}
 
 The function's format defines the value of the HTTP Accept header used when making the HTTP remote procedure call.
-If the resource provides a "formats" hint, the supplied format must be one of the specified formats.
+If the resource provides a "formats" hint, the supplied format SHOULD be one of the specified formats.
 
-If not specified, the default value will be <code>application/json</code>.
+If not specified, the default value will be the first specified value of the resource's "formats" hint.
+If the resource does not specify a "formats" hint, the default value will be <code>application/json</code>.
 
 
 ### Request Format ### {#function-request-format}
 
-Functions that make an HTTP remote procedure call with the POST or PUT HTTP methods may send data in the request body.
+Functions that make an HTTP remote procedure call with the <code>POST</code> or <code>PUT</code> HTTP methods may send data in the request body.
 The value of the "requestFormat" will be used as the Content-Type header of the HTTP request.
+
+The value of "requestFormat" SHOULD match a value specified in the resource's "acceptPost" or "acceptPut" members.
 
 If the "requestFormat" is specified as <code>application/json</code> or uses the "+json" structural suffix,
 the request body will be sent in JSON format.
@@ -259,17 +263,18 @@ Alternatively the request body may be sent as multi-part form data via the "requ
 or url encoded via the "requestFormat" of <code>application/x-www-form-urlencoded</code>.
 Other request formats are unspecified at this time.
 
-If not specified, the default value will be <code>multipart/form-data</code> for POST methods,
-and <code>application/json</code> for PUT methods.
+If not specified, the default value will be the first specified value of "acceptPost" or "acceptPut", depending on the HTTP method,
+or <code>multipart/form-data</code> for <code>POST</code> methods,
+and <code>application/json</code> for <code>PUT</code> methods if "acceptPost" or "acceptPut" is not specified.
 
 
 ### Request Body ### {#function-request-body}
 
-Any defined function arguments and object state that are not used by the hrefTemplate will be sent as the request body of PUT or POST HTTP remote procedure calls.
+Any defined function arguments and object state that are not used by the hrefTemplate will be sent as the request body of <code>PUT</code> or <code>POST</code> HTTP remote procedure calls.
 Instead of sending all unused arguments and object state, the function may optionally specify an array of value names.
 If specified, the "requestBody" will limit the contents of the request body to the values of the arguments or object state specified in the array. If the array is empty, the request body will be empty.
 
-If not specified, all defined arguments and object state that has not been consumed by the hrefTemplate will be sent as the request body.
+If not specified, all defined arguments and object state that have not been consumed by the hrefTemplate will be sent as the request body.
 
 ### Default Values ### {#function-defaults}
 
@@ -308,10 +313,10 @@ Additional event listeners for the same API resource will re-use the same <a>Eve
 When the last event listener is removed for a given API resource,
 the <a>EventSource</a> for that API resource is closed.
 
-Setting an event listener via the "on&lt;event type>" attribute are equivalent to removing any current listener,
-then adding the listener.
+Setting an event listener via the "on&lt;event type>" attribute is equivalent to removing any current listener,
+then adding the new listener.
 Therefore resetting a single event listener via the "on&lt;event type>" attribute will close, then re-open the <a>EventSource</a>.
-The current state of the RemoteWebObject will be used to re-evaliate the hrefTemplate of the <a>EventSource</a> when re-opening.
+The current state of the RemoteWebObject will be used to re-evaluate the hrefTemplate of the <a>EventSource</a> when re-opening.
 
 The following is an example of an HTTP API Resource that provides an event at specified intervals:
 <pre class='json example'>
@@ -412,19 +417,21 @@ Members of the private state object are only avaiable when processing remote pro
 
 All functions of a RemoteWebObject are implemented as HTTP remote procedure calls using the following algorithm:
 
-1. Let <code>func</code> be the object from the Remote Web Object Document defining the function.
+1. Let <code>resource</code> be the object from the Remote Web Object Document defining the API resource.
 
-2. Let <code>args</code> be a new, empty object.
+2. Let <code>func</code> be the object from <code>resource</code> defining the function.
 
-3. If the <code>func</code> object has a "defaults" member, copy the members of <code>func["defaults"]</code> to <code>args</code>.
+3. Let <code>args</code> be a new, empty object.
 
-4. Copy the public attributes of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
+4. If the <code>func</code> object has a "defaults" member, copy the members of <code>func["defaults"]</code> to <code>args</code>.
 
-5. Copy the read only attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
+5. Copy the public attributes of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
 
-6. Copy the private attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
+6. Copy the read only attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
 
-7. If the <code>func</code> object has an "arguments" member, do the following:
+7. Copy the private attribtues of the RemoteWebObject to <code>args</code>, in the case of collisions, overwrite the existing value.
+
+8. If the <code>func</code> object has an "arguments" member, do the following:
 
     1. For value in <code>func.arguments</code> as <code>arg</code>.
 
@@ -436,36 +443,54 @@ All functions of a RemoteWebObject are implemented as HTTP remote procedure call
 
     5. Add the value of the argument passed to the function at <code>index</code> to <code>args</code> as <code>args[arg]</code>, in the case of collisions, overwrite the existing value.
 
-8. If the API resource that <code>func</code> is defined for has a "hrefTemplate" member,
+9. If <code>resource</code> has a "hrefTemplate" member,
     let <code>url</code> be the resolved value of the templated link using the values from <code>args</code>,
-    else let <code>url</code> be the value of the "href" member of the API resource.
+    else if <code>resource</code> has an "href" member, let <code>url</code> be the value of <code>resource.href</code>,
+    else let <code>url</code> be "".
 
-9. If the API resource that <code>func</code> is defined for has a "method" member, and the value of "method" is "PUT" or "POST", do the following:
+10. If <code>url</code> is a relative URL or an empty string, let <code>url</code> be the absolute URL computed with the value of <code>url</code> and the URL that the Remote Web Object Document was retrieved from as the base.
 
-    1. For each variable used in the resolution of the templated link, delete that member from <code>args</code>.
+11. If <code>func</code> has a "method" member, let <code>method</code> be the value of <code>func.method</code>,
+    else if <code>resource</code> has a "hints.allow" member, let <code>method</code> be the first value of <code>resource.hints.allow</code>,
+    else let <code>method></code> be "GET".
+
+12. If the value of <code>method</code> is "PUT" or "POST", do the following:
+
+    1. For each variable used in the resolution of the "hrefTemplate", delete that member from <code>args</code>.
 
     2. If the <code>func</code> object has a member "requestBody", remove all members from <code>args</code> that are not listed in <code>func["requestBody"]</code>.
 
-    3. If the <code>func</code> object has a member "requestFormat", let <code>format</code> be the value of <code>func["requestFormat"]</code>,
-        else if the value of <code>func["method"]</code> is "POST", let <code>format</code> be "multipart/form",
-        else if the value of <code>func["method"]</code> is "PUT", let <code>format</code> be "applicaiton/json".
+    3. If <code>func</code> has a "requestFormat" member, let <code>requestFormat</code> be the value of <code>func.requestFormat</code>,
+        otherwise do the following:
 
-    4. If the value of <code>format</code> is not "application/json", perform a recursive flattening of <code>args</code>.
+        1. If the value of <code>method</code> is "POST", then if <code>resource</code> has a "hints.acceptPost" member,
+            let <code>requestFormat</code> be the first value of <code>resource.hints.acceptPost</code>,
+            else let <code>requestFormat</code> be "multipart/form".
+
+        2. If the value of <code>method</code> is "PUT", then if <code>resource</code> has a "hints.acceptPut" member,
+            let <code>requestFormat</code> be the first value of <code>resource.hints.acceptPut</code>,
+            else let <code>requestFormat</code> be "applicaiton/json".
+
+    4. If the value of <code>requestFormat</code> is not "application/json", perform a recursive flattening of <code>args</code>.
         If a member of <code>args</code> is an array, replace the member with a set of members named <code>&lt;member-name>[&lt;index>]</code> for each item in the array.
         If a member of <code>args</code> is an object, replace the member with a set of memberd named <code>&lt;member-name>[&lt;item-name>]</code> for each item in the object.
 
-    5. If the value of <code>format</code> is "application/x-www-form-urlencoded", let the request body be the contents of <code>args</code> in url encoded form format,
-        else if the value of <code>format</code> is "multipart/form", let the request body be the the contents of <code>args</code> in mulitpart/form format,
-        else if the value of <code>format</code> is "application/json" or uses the "+json" structural suffix, let the request body be the content of <code>args</code> in JSON format.
+    5. If the value of <code>requestFormat</code> is "application/x-www-form-urlencoded", let <code>body</code> be the contents of <code>args</code> in url encoded form format,
+        else if the value of <code>requestFormat</code> is "multipart/form", let the <code>body</code> be the the contents of <code>args</code> in mulitpart/form format,
+        else if the value of <code>requestFormat</code> is "application/json" or uses the "+json" structural suffix, let the <code>body</code> be the content of <code>args</code> in JSON encoding.
 
-10. Perform an asynchronous HTTP fetch of <code>url</code> using the authentication credentials and flags provided in the oringal <a>fetchRemoteObject()</a> call,
-    using the HTTP method of <code>func["method"]</code> (or "GET" if <code>func</code> does not have a "method" member),
-    setting the "Accept" header to the value of <code>func["format"]</code> (or "application/json" if <code>func</code> does not have a "format" member),
-    and the "Content-Type" format to the value of <code>format</code> (for "PUT" or "POST" methods).
+13. If <code>func</code> has a "format" member, let <code>accept</code> be the value of <code>func.format</code>,
+    else, if <code>resource</code> has a "formats" memeber, let <code>accept</code> be the first value of <code>resource.formats</code>,
+    else, let <code>accept</code> be "application/json".
 
-11. Return a new <a>Promise</a>.
+14. Perform an asynchronous HTTP fetch of <code>url</code> using the authentication credentials and flags provided in the oringal <a>fetchRemoteObject()</a> call,
+    using the HTTP method of <code>method</code>,
+    setting the "Accept" header to the value of <code>accept</code>,
+    if <code>method</code> is "POST" or "PUT", set the "Content-Type" header to <code>requestFormat</code> and the request body to the value of <code>body</code>.
 
-12. If the HTTP fetch completes with a status of 200, process the response per the section below and resolve the returned Promise with the return value,
+15. Return a new <a>Promise</a>.
+
+16. If the HTTP fetch completes with a status of 200, process the response per the section below and resolve the returned Promise with the return value,
     otherwise reject the returned Promise with the HTTP error information.
 
 
@@ -483,7 +508,7 @@ The return value of a RemoteWebObject function depends on the HTTP response of t
     then the response JSON Patch document is applied to the state of the RemoteWebObject per [[!JSON-Patch]],
     if the JSON Patch document creates a top-level member named "return", the value of that member is returned.
 
-When applying a JSON Patch to the RemoteWebObject, the path of each operation must begin with
+When applying a JSON Patch to the RemoteWebObject, the path of each operation MUST begin with
 "/public/", "/readonly/", "/private/", or "/return/" to address the respective area of the RemoteWebObject's state or the function return data.
 
 

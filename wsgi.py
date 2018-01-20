@@ -168,7 +168,7 @@ def application(env, start_response):
                 api = {
                     'resources': {
                         'crc': {
-                            'hrefTemplate': application_uri + 'demo/crc/{?data}',
+                            'hrefTemplate': 'crc/{?data}',
                             'hrefVars': {
                                 'data': 'param/hash/data'
                             },
@@ -238,7 +238,7 @@ def application(env, start_response):
             api = {
                 'resources': {
                     'password': {
-                        'hrefTemplate': application_uri + 'demo/password/{?cleartext,algorithm,salt,rounds}',
+                        'hrefTemplate': 'password/{?cleartext,algorithm,salt,rounds}',
                         'hrefVars': {
                             'cleartext': 'param/pass/cleartext',
                             'algorithm': 'param/pass/algorithm',
@@ -266,7 +266,7 @@ def application(env, start_response):
                         }
                     },
                     'hash': {
-                        'hrefTemplate': application_uri + 'demo/hash/{?algorithm}',
+                        'hrefTemplate': 'hash/{?algorithm}',
                         'hrefVars': {
                             'data': 'param/hash/data',
                             'algorithm': 'param/hash/algorithm'
@@ -300,7 +300,7 @@ def application(env, start_response):
                         }
                     },
                     'crc': {
-                        'hrefTemplate': application_uri + 'demo/crc/{?data,value}',
+                        'hrefTemplate': 'crc/{?data,value}',
                         'hrefVars': {
                             'data': 'param/hash/data',
                             'value': 'param/hash/value'
@@ -321,13 +321,13 @@ def application(env, start_response):
                         }
                     },
                     'tick': {
-                        'href': application_uri + 'demo/tick',
+                        'href': 'tick',
                         'events': {
                             'tick': {}
                         }
                     },
                     'clock': {
-                        'href': application_uri + 'demo/clock',
+                        'href': 'clock',
                         'events': {
                             'second': {},
                             'minute': {}
