@@ -438,7 +438,7 @@ class RemoteWebObject {
         }
 
         async function rpcCall(object, resourceName, functionName, args) {
-            console.log('calling ' + resourceName + ':' + functionName);
+            console.log('calling', resourceName + ':' + functionName);
 
             let resource = resources[resourceName];
             let hints = (resource.hasOwnProperty('hints') ? resource.hints : {});
@@ -456,7 +456,6 @@ class RemoteWebObject {
             let url = new URL(resource.uriTemplate ? resource.uriTemplate.expand(argObject) : resource.href, baseURL);
 
             if (url.href) {
-                console.log('fetch ' + url.href);
                 let method = 'GET';
                 let headers = Object.assign({}, callOptions.headers);
                 headers.Accept = format;
@@ -531,7 +530,7 @@ class RemoteWebObject {
                 });
 
                 if (response.headers.has('content-type')) {
-                    let responseType = response.headers.get('content-type');
+                    let responseType = response.headers.get('content-type').split(';')[0];
                     if ('application/json-patch+json' == responseType) {
                         return applyPatch(await response.json());
                     }
@@ -568,7 +567,7 @@ class RemoteWebObject {
                 if (resource.hasOwnProperty('functions')) {
                     for (let functionName in resource.functions) {
                         if (resource.functions.hasOwnProperty(functionName) && (! self.hasOwnProperty(functionName))) {
-                            console.log('resource', resourceName, 'has function' + functionName + '(' +
+                            console.log('resource', resourceName, 'has function', functionName + '(' +
                                 (resource.functions[functionName].hasOwnProperty('arguments') ? resource.functions[functionName].arguments.join(', ') : '') + ')');
                             self[functionName] = makeRPCFunction(resourceName, functionName);
                         }
